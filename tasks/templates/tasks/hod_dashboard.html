@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOD Dashboard — Clovia Exit Management</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png" alt="Clovia">
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <a href="{% url 'hod_dashboard' %}" class="titlebar-nav-item active">My Department</a>
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HOD</span>
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas">
+
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>{% if is_hod %}{{ department }} — {% endif %}Offboarding Overview</h1>
+      <p>
+        {% if is_hod %}
+          Employees from your department currently in the exit process.
+        {% else %}
+          All active exit processes across departments.
+        {% endif %}
+      </p>
+    </div>
+    <span style="font-size:12px; color:var(--text-tertiary);">{{ processes|length }} active</span>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Summary tiles -->
+  <div class="stat-row" style="margin-bottom:16px;">
+    <div class="stat-tile">
+      <div class="stat-tile-num">{{ processes|length }}</div>
+      <div class="stat-tile-label">Active Exits</div>
+    </div>
+    <div class="stat-tile">
+      <div class="stat-tile-num">
+        {% with cleared=0 %}
+          {% for p in processes %}{% if p.has_interview %}{% endif %}{% endfor %}
+          {{ processes|length }}
+        {% endwith %}
+      </div>
+      <div class="stat-tile-label">Total Employees</div>
+    </div>
+  </div>
+
+  <div class="pane" style="padding:0; overflow:hidden;">
+    <div class="pane-header">
+      <div class="pane-icon">≡</div>
+      Exit Processes
+      <span style="margin-left:auto; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">Read-only view — contact HR to make changes</span>
+    </div>
+
+    {% if processes %}
+    <table class="win-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Department</th>
+          <th>Last Day</th>
+          <th>Interview</th>
+          <th>Tasks</th>
+          <th>Progress</th>
+          <th>Status</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in processes %}
+        <tr>
+          <td><strong>{{ p.employee.get_full_name|default:p.employee.username }}</strong></td>
+          <td style="color:var(--text-secondary);">{{ p.employee.department|default:"—" }}</td>
+          <td style="white-space:nowrap; color:var(--text-secondary);">
+            {{ p.last_working_date|date:"d M Y"|default:"—" }}
+          </td>
+          <td>
+            {% if p.has_interview %}
+              <span class="tag tag-success">✓ Done</span>
+            {% else %}
+              <span class="tag tag-warning">Pending</span>
+            {% endif %}
+          </td>
+          <td style="font-variant-numeric:tabular-nums;">
+            {{ p.task_done }}/{{ p.task_total }}
+          </td>
+          <td style="min-width:80px;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <div class="progress-bar" style="flex:1; margin:0;">
+                <div class="progress-fill" style="width:{{ p.progress_pct }}%;{% if p.progress_pct == 100 %}background:var(--success);{% endif %}"></div>
+              </div>
+              <span style="font-size:11px; color:var(--text-tertiary); white-space:nowrap;">{{ p.progress_pct }}%</span>
+            </div>
+          </td>
+          <td>
+            <span class="tag
+              {% if p.status == 'cleared' %}tag-success
+              {% elif p.status == 'initiated' %}tag-warning
+              {% else %}tag-accent{% endif %}">
+              {{ p.get_status_display }}
+            </span>
+          </td>
+          <td>
+            <a href="{% url 'offboarding_checklist' p.employee.pk %}" class="cmd-btn cmd-btn-secondary" style="font-size:11px; padding:4px 10px;">
+              View →
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div style="padding:52px; text-align:center; color:var(--text-tertiary);">
+      <div style="font-size:32px; margin-bottom:10px; opacity:0.4;">📋</div>
+      <div style="font-weight:600; margin-bottom:4px;">No active exit processes</div>
+      <div style="font-size:12px;">
+        {% if is_hod %}No employees from {{ department }} are currently being offboarded.
+        {% else %}No exit processes have been initiated yet.{% endif %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</body>
+</html>

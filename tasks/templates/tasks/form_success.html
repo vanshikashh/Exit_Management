@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submitted — Clovia Exit Management</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+<div class="success-shell">
+  <div class="success-pane">
+
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png"
+         height="24" alt="Clovia" style="margin-bottom:24px; display:block;">
+
+    <div class="success-icon-wrap">✓</div>
+
+    <h1>Interview submitted</h1>
+    <p class="success-sub">
+      Thank you, <strong>{{ interview.employee.first_name|default:interview.employee.username }}</strong>.
+      Submitted {{ interview.interview_date_time|date:"F j, Y" }}.
+      HR will be in touch if needed.
+    </p>
+
+    <dl class="detail-grid">
+      <dt>Position</dt>
+      <dd>{{ interview.current_position }}</dd>
+      <dt>Last Working Day</dt>
+      <dd>{{ interview.last_date_of_employment|date:"d M Y" }}</dd>
+      <dt>Tenure</dt>
+      <dd>{{ interview.tenure_days }} days</dd>
+      <dt>Primary Reason</dt>
+      <dd>{{ interview.reasons }}</dd>
+      <dt>Avg Rating</dt>
+      <dd><span class="tag tag-accent">{{ interview.avg_rating }} / 5</span></dd>
+      <dt>Would Recommend</dt>
+      <dd>
+        <span class="tag {% if interview.recommend %}tag-success{% else %}tag-error{% endif %}">
+          {{ interview.recommend|yesno:"Yes,No" }}
+        </span>
+      </dd>
+      <dt>Would Re-apply</dt>
+      <dd>
+        <span class="tag {% if interview.reapply %}tag-success{% else %}tag-error{% endif %}">
+          {{ interview.reapply|yesno:"Yes,No" }}
+        </span>
+      </dd>
+    </dl>
+
+    <form method="post" action="{% url 'logout' %}" style="margin-top:24px;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+
+  </div>
+</div>
+</body>
+</html>

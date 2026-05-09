@@ -1,0 +1,830 @@
+/* ═══════════════════════════════════════════════════════════════
+   CLOVIA EXIT MANAGEMENT — Windows 11 Fluent Design System
+   Mica surfaces · Acrylic layers · Segoe UI Variable · 80ms snappy
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+/* ─── Design Tokens ──────────────────────────────────────────── */
+:root {
+  /* Fluent accent — Win11 default blue */
+  --accent:         #0078D4;
+  --accent-dark:    #005A9E;
+  --accent-light:   #60CDFF;
+  --accent-subtle:  rgba(0,120,212,0.08);
+  --accent-hover:   rgba(0,120,212,0.12);
+
+  /* Mica / surface layers */
+  --mica-base:      rgba(243,243,243,0.85);
+  --mica-alt:       rgba(250,250,250,0.92);
+  --layer-1:        rgba(255,255,255,0.70);
+  --layer-2:        rgba(255,255,255,0.85);
+  --layer-3:        #ffffff;
+  --layer-stroke:   rgba(0,0,0,0.08);
+  --layer-stroke-2: rgba(0,0,0,0.14);
+
+  /* Text */
+  --text-primary:   #1a1a1a;
+  --text-secondary: #5a5a5a;
+  --text-tertiary:  #8a8a8a;
+  --text-disabled:  #b0b0b0;
+  --text-on-accent: #ffffff;
+
+  /* Status */
+  --success:        #107C10;
+  --success-bg:     rgba(16,124,16,0.08);
+  --warning:        #D83B01;
+  --warning-bg:     rgba(216,59,1,0.08);
+  --error:          #C42B1C;
+  --error-bg:       rgba(196,43,28,0.08);
+  --caution:        #9D5D00;
+  --caution-bg:     rgba(157,93,0,0.08);
+
+  /* Geometry — Win11 is subtle radius, NOT pill */
+  --radius-sm:   4px;
+  --radius-md:   6px;
+  --radius-lg:   8px;
+  --radius-xl:   12px;
+
+  /* Elevation shadows — directional, crisp */
+  --shadow-2:  0 1px 2px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+  --shadow-4:  0 2px 4px rgba(0,0,0,0.14), 0 0 0 1px rgba(0,0,0,0.06);
+  --shadow-8:  0 4px 8px rgba(0,0,0,0.14), 0 2px 4px rgba(0,0,0,0.10);
+  --shadow-16: 0 8px 16px rgba(0,0,0,0.14), 0 4px 8px rgba(0,0,0,0.10);
+
+  /* Snappy — no slow curves */
+  --t-fast:  80ms ease;
+  --t-mid:   120ms ease;
+}
+
+/* ─── Reset ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: auto; } /* Win11 doesn't smooth-scroll */
+
+body {
+  font-family: 'Outfit', 'Segoe UI Variable', 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background:
+    linear-gradient(135deg, #E8EFF7 0%, #EFF3F8 40%, #E4EEF7 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Titlebar / Navbar ──────────────────────────────────────── */
+.titlebar {
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  height: 48px;
+  background: rgba(230,238,248,0.82);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--layer-stroke-2);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 0;
+}
+
+.titlebar-app {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px 0 0;
+  margin-right: 8px;
+  border-right: 1px solid var(--layer-stroke-2);
+}
+.titlebar-app img {
+  height: 20px;
+  object-fit: contain;
+}
+.titlebar-app-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+/* Win11 command bar nav items */
+.titlebar-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  padding: 0 8px;
+}
+.titlebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  border: none;
+  background: transparent;
+  white-space: nowrap;
+}
+.titlebar-nav-item:hover {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+.titlebar-nav-item.active {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 5px;
+  border-radius: var(--radius-sm);
+  background: var(--layer-1);
+  border: 1px solid var(--layer-stroke);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: default;
+}
+.user-avatar {
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ─── Command Bar Buttons ────────────────────────────────────── */
+/* Win11 style: square-ish, thin border, icon+label, sharp */
+.cmd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
+  text-decoration: none;
+  white-space: nowrap;
+  letter-spacing: 0.1px;
+}
+
+.cmd-btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent-dark);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset;
+}
+.cmd-btn-primary:hover {
+  background: #106EBE;
+  text-decoration: none;
+  color: #fff;
+}
+.cmd-btn-primary:active { background: var(--accent-dark); transform: translateY(1px); }
+
+.cmd-btn-secondary {
+  background: var(--layer-2);
+  color: var(--text-primary);
+  border: 1px solid var(--layer-stroke-2);
+}
+.cmd-btn-secondary:hover {
+  background: var(--layer-3);
+  border-color: rgba(0,0,0,0.2);
+  text-decoration: none;
+  color: var(--text-primary);
+}
+.cmd-btn-secondary:active { background: rgba(0,0,0,0.04); transform: translateY(1px); }
+
+.cmd-btn-danger {
+  background: var(--error-bg);
+  color: var(--error);
+  border: 1px solid rgba(196,43,28,0.2);
+}
+.cmd-btn-danger:hover { background: rgba(196,43,28,0.14); }
+
+/* Large action button — form submit */
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 24px;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--accent-dark);
+  background: var(--accent);
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, var(--shadow-2);
+  transition: background var(--t-fast), transform var(--t-fast);
+  letter-spacing: 0.1px;
+}
+.btn-action:hover { background: #106EBE; }
+.btn-action:active { background: var(--accent-dark); transform: translateY(1px); box-shadow: none; }
+
+/* ─── Page Canvas ────────────────────────────────────────────── */
+.page-canvas {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 20px 20px 80px;
+}
+
+/* ─── Page Header — Mica card with left accent bar ───────────── */
+.page-header {
+  background: var(--layer-2);
+  border: 1px solid var(--layer-stroke);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  margin-bottom: 16px;
+  box-shadow: var(--shadow-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.page-header-text h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+.page-header-text p {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* ─── Cards / Panes ──────────────────────────────────────────── */
+.pane {
+  background: var(--layer-2);
+  border: 1px solid var(--layer-stroke);
+  border-radius: var(--radius-lg);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-2);
+  overflow: hidden;
+}
+
+.pane-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: rgba(0,0,0,0.025);
+  border-bottom: 1px solid var(--layer-stroke);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.pane-header .pane-icon {
+  width: 16px; height: 16px;
+  background: var(--accent);
+  border-radius: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  flex-shrink: 0;
+}
+
+.pane-body { padding: 16px 20px; }
+
+/* ─── Form Elements ──────────────────────────────────────────── */
+.form-group { margin-bottom: 14px; }
+
+.form-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.form-row .form-group { flex: 1; min-width: 180px; }
+
+.field-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 5px;
+  letter-spacing: 0.1px;
+}
+
+.question-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 10px;
+  line-height: 1.4;
+}
+
+/* Win11 text input — thin, sharp bottom border focus */
+.win-input {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-primary);
+  background: var(--layer-3);
+  border: 1px solid var(--layer-stroke-2);
+  border-bottom: 2px solid rgba(0,0,0,0.3);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--t-fast);
+  appearance: none;
+}
+.win-input:hover { border-color: rgba(0,0,0,0.4); }
+.win-input:focus {
+  border-color: var(--layer-stroke-2);
+  border-bottom-color: var(--accent);
+}
+
+textarea.win-input {
+  resize: vertical;
+  min-height: 72px;
+  font-family: inherit;
+}
+
+/* ─── Radio — Win11 segmented control style ──────────────────── */
+/* Override Django's RadioSelect <ul><li> output */
+.radio-segment ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  border: 1px solid var(--layer-stroke-2);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  width: fit-content;
+  max-width: 100%;
+  background: var(--layer-3);
+}
+.radio-segment ul li {
+  display: flex;
+}
+.radio-segment ul li + li {
+  border-left: 1px solid var(--layer-stroke-2);
+}
+.radio-segment ul li label {
+  display: flex;
+  align-items: center;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+  user-select: none;
+  margin: 0;
+  letter-spacing: 0;
+}
+.radio-segment ul li label:hover {
+  background: rgba(0,0,0,0.04);
+  color: var(--text-primary);
+}
+.radio-segment ul li input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+  pointer-events: none;
+}
+.radio-segment ul li:has(input:checked) label {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* Rating 1–5 — compact square tiles */
+.radio-rating ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.radio-rating ul li label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px; height: 36px;
+  border: 1px solid var(--layer-stroke-2);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  background: var(--layer-3);
+  transition: background var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+  user-select: none;
+  margin: 0;
+}
+.radio-rating ul li label:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.radio-rating ul li input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+  pointer-events: none;
+}
+.radio-rating ul li:has(input:checked) label {
+  background: var(--accent);
+  border-color: var(--accent-dark);
+  color: #fff;
+  box-shadow: var(--shadow-2);
+}
+
+/* ─── Checkbox — Win11 style ─────────────────────────────────── */
+.win-check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--layer-stroke-2);
+  border-radius: var(--radius-sm);
+  background: var(--layer-3);
+  cursor: pointer;
+  transition: background var(--t-fast), border-color var(--t-fast);
+}
+.win-check-row:hover { background: rgba(0,120,212,0.04); border-color: var(--accent); }
+
+.win-check-row input[type="checkbox"] {
+  width: 16px; height: 16px;
+  accent-color: var(--accent);
+  margin-top: 1px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.win-check-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+/* ─── Status badges ──────────────────────────────────────────── */
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  border: 1px solid transparent;
+}
+.tag-success  { background: var(--success-bg); color: var(--success); border-color: rgba(16,124,16,0.2); }
+.tag-error    { background: var(--error-bg);   color: var(--error);   border-color: rgba(196,43,28,0.2); }
+.tag-accent   { background: var(--accent-subtle); color: var(--accent); border-color: rgba(0,120,212,0.2); }
+.tag-neutral  { background: rgba(0,0,0,0.04); color: var(--text-secondary); border-color: var(--layer-stroke-2); }
+.tag-warning  { background: var(--caution-bg); color: var(--caution); border-color: rgba(157,93,0,0.2); }
+
+/* ─── Alerts ─────────────────────────────────────────────────── */
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  margin-bottom: 14px;
+  font-size: 13px;
+  border-left: 3px solid transparent;
+}
+.alert-success { background: var(--success-bg); color: var(--success); border-left-color: var(--success); border: 1px solid rgba(16,124,16,0.2); border-left: 3px solid var(--success); }
+.alert-error   { background: var(--error-bg);   color: var(--error);   border: 1px solid rgba(196,43,28,0.2); border-left: 3px solid var(--error); }
+.alert-warning { background: var(--caution-bg); color: var(--caution); border: 1px solid rgba(157,93,0,0.2); border-left: 3px solid var(--caution); }
+.alert a { color: inherit; font-weight: 700; }
+
+.field-error { color: var(--error); font-size: 11px; margin-top: 4px; }
+
+/* ─── Data Table ─────────────────────────────────────────────── */
+.win-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.win-table thead th {
+  padding: 8px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  background: rgba(0,0,0,0.02);
+  border-bottom: 1px solid var(--layer-stroke-2);
+  white-space: nowrap;
+}
+.win-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--layer-stroke);
+  color: var(--text-primary);
+  vertical-align: middle;
+}
+.win-table tbody tr:last-child td { border-bottom: none; }
+.win-table tbody tr:hover td { background: var(--accent-subtle); }
+
+/* ─── Stat tiles ─────────────────────────────────────────────── */
+.stat-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.stat-tile {
+  background: var(--layer-3);
+  border: 1px solid var(--layer-stroke);
+  border-top: 3px solid var(--accent);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  box-shadow: var(--shadow-2);
+  transition: box-shadow var(--t-fast), transform var(--t-fast);
+}
+.stat-tile:hover { box-shadow: var(--shadow-4); transform: translateY(-1px); }
+.stat-tile-num {
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--accent);
+  line-height: 1;
+  margin-bottom: 4px;
+  font-variant-numeric: tabular-nums;
+}
+.stat-tile-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ─── Progress ───────────────────────────────────────────────── */
+.progress-bar {
+  height: 4px;
+  background: rgba(0,0,0,0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 6px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+  transition: width 120ms ease;
+}
+
+/* ─── Task row ───────────────────────────────────────────────── */
+.task-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--layer-stroke);
+}
+.task-row:last-child { border-bottom: none; }
+.task-body { flex: 1; min-width: 0; }
+.task-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.task-sub { font-size: 11px; color: var(--text-tertiary); margin-top: 2px; }
+.task-note-input {
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 8px;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text-primary);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid var(--layer-stroke);
+  border-radius: var(--radius-sm);
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+.task-note-input:focus { border-color: var(--accent); background: var(--layer-3); }
+
+.task-controls { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.win-select {
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 8px;
+  border: 1px solid var(--layer-stroke-2);
+  border-radius: var(--radius-sm);
+  background: var(--layer-3);
+  color: var(--text-primary);
+  cursor: pointer;
+  outline: none;
+  transition: border-color var(--t-fast);
+}
+.win-select:focus { border-color: var(--accent); }
+
+/* ─── Login ──────────────────────────────────────────────────── */
+.login-shell {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1fr 420px;
+}
+.login-backdrop {
+  background:
+    linear-gradient(160deg, #0078D4 0%, #005A9E 50%, #003A6E 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding: 52px;
+  position: relative;
+  overflow: hidden;
+}
+.login-backdrop::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 70%, rgba(255,255,255,0.08) 0%, transparent 60%),
+    radial-gradient(circle at 80% 20%, rgba(96,205,255,0.12) 0%, transparent 50%);
+}
+.login-backdrop-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.login-backdrop-text {
+  position: relative;
+  z-index: 1;
+  color: #fff;
+}
+.login-backdrop-text .product-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+.login-backdrop-text h2 {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.1;
+  margin-bottom: 14px;
+}
+.login-backdrop-text p {
+  font-size: 14px;
+  opacity: 0.7;
+  max-width: 340px;
+  line-height: 1.6;
+}
+
+.login-panel {
+  background: var(--mica-base);
+  backdrop-filter: blur(24px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 52px 44px;
+  border-left: 1px solid var(--layer-stroke-2);
+}
+.login-panel-logo { height: 28px; margin-bottom: 32px; }
+.login-panel h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+.login-panel .login-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 28px;
+}
+
+/* ─── Success page ───────────────────────────────────────────── */
+.success-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.success-pane {
+  background: var(--layer-2);
+  border: 1px solid var(--layer-stroke);
+  border-radius: var(--radius-xl);
+  padding: 40px;
+  max-width: 560px;
+  width: 100%;
+  box-shadow: var(--shadow-16);
+}
+.success-icon-wrap {
+  width: 52px; height: 52px;
+  background: var(--success-bg);
+  border: 2px solid rgba(16,124,16,0.3);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  margin-bottom: 18px;
+}
+.success-pane h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.success-pane .success-sub {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0;
+  border: 1px solid var(--layer-stroke);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  font-size: 13px;
+}
+.detail-grid dt {
+  padding: 9px 14px;
+  background: rgba(0,0,0,0.025);
+  border-bottom: 1px solid var(--layer-stroke);
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  font-size: 12px;
+}
+.detail-grid dd {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--layer-stroke);
+  color: var(--text-primary);
+}
+.detail-grid dt:last-of-type,
+.detail-grid dd:last-of-type { border-bottom: none; }
+
+/* ─── Section divider ────────────────────────────────────────── */
+.section-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.section-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--layer-stroke-2);
+}
+
+/* ─── Links ──────────────────────────────────────────────────── */
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ─── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 700px) {
+  .login-shell { grid-template-columns: 1fr; }
+  .login-backdrop { display: none; }
+  .login-panel { padding: 36px 24px; }
+  .page-canvas { padding: 12px 10px 60px; }
+  .pane-body { padding: 14px 14px; }
+  .win-table { font-size: 12px; }
+  .win-table thead th, .win-table tbody td { padding: 8px 10px; }
+  .stat-row { grid-template-columns: repeat(2,1fr); }
+  .task-controls { flex-direction: column; align-items: flex-end; }
+}

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Exit Status — Clovia</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png" alt="Clovia">
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <span class="titlebar-nav-item active">My Status</span>
+    {% if process %}
+    <a href="{% url 'exit_interview_form' %}" class="titlebar-nav-item">Exit Interview</a>
+    {% endif %}
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas">
+
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>My Offboarding Status</h1>
+      <p>Track your exit interview and clearance tasks in one place.</p>
+    </div>
+    {% if process %}
+      <span class="tag
+        {% if process.status == 'cleared' %}tag-success
+        {% elif process.status == 'initiated' %}tag-warning
+        {% else %}tag-accent{% endif %}"
+        style="font-size:12px; padding:5px 14px;">
+        {{ process.get_status_display }}
+      </span>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if not process %}
+  <!-- Not yet initiated -->
+  <div class="pane">
+    <div class="pane-body" style="text-align:center; padding:52px 20px;">
+      <div style="font-size:36px; margin-bottom:14px; opacity:0.3;">⏳</div>
+      <div style="font-size:16px; font-weight:700; color:var(--text-primary); margin-bottom:8px;">
+        Exit process not started yet
+      </div>
+      <div style="font-size:13px; color:var(--text-secondary); max-width:360px; margin:0 auto;">
+        Your exit process hasn't been initiated by HR. If you've submitted your resignation,
+        please reach out to HR to begin the offboarding process.
+      </div>
+    </div>
+  </div>
+
+  {% else %}
+
+  <!-- Step tracker -->
+  <div class="pane" style="margin-bottom:14px;">
+    <div class="pane-header">
+      <div class="pane-icon">→</div>
+      Offboarding Steps
+    </div>
+    <div class="pane-body">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:12px;">
+
+        <!-- Step 1 -->
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid var(--success); background:var(--success-bg);">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--success); margin-bottom:4px;">Step 1</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Process Initiated</div>
+          <div style="font-size:12px; color:var(--text-secondary);">
+            By {{ process.initiated_by.get_full_name|default:process.initiated_by.username|default:"HR" }}
+            {% if process.last_working_date %}<br>Last day: <strong>{{ process.last_working_date|date:"d M Y" }}</strong>{% endif %}
+          </div>
+          <span class="tag tag-success" style="margin-top:8px;">✓ Done</span>
+        </div>
+
+        <!-- Step 2 -->
+        {% if interview %}
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid var(--success); background:var(--success-bg);">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--success); margin-bottom:4px;">Step 2</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Exit Interview</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Submitted {{ interview.interview_date_time|date:"d M Y" }}</div>
+          <span class="tag tag-success" style="margin-top:8px;">✓ Done</span>
+        </div>
+        {% else %}
+        <div style="padding:14px; border:1px solid var(--accent); border-radius:var(--radius-md); border-top:3px solid var(--accent); background:var(--accent-subtle);">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--accent); margin-bottom:4px;">Step 2</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Exit Interview</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Not yet submitted</div>
+          <a href="{% url 'exit_interview_form' %}" class="cmd-btn cmd-btn-primary" style="margin-top:8px; display:inline-flex; font-size:11px; padding:4px 12px;">
+            Start now →
+          </a>
+        </div>
+        {% endif %}
+
+        <!-- Step 3 -->
+        {% if progress_pct == 100 %}
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid var(--success); background:var(--success-bg);">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--success); margin-bottom:4px;">Step 3</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Clearance Tasks</div>
+          <div style="font-size:12px; color:var(--text-secondary);">All {{ total }} tasks cleared</div>
+          <span class="tag tag-success" style="margin-top:8px;">✓ Done</span>
+        </div>
+        {% else %}
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid {% if total > 0 %}var(--accent){% else %}var(--layer-stroke-2){% endif %};">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Step 3</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Clearance Tasks</div>
+          <div style="font-size:12px; color:var(--text-secondary);">{{ completed }} / {{ total }} complete</div>
+          <div class="progress-bar" style="margin-top:8px;"><div class="progress-fill" style="width:{{ progress_pct }}%;"></div></div>
+        </div>
+        {% endif %}
+
+        <!-- Step 4 -->
+        {% if process.status == 'cleared' %}
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid var(--success); background:var(--success-bg);">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--success); margin-bottom:4px;">Step 4</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Clearance</div>
+          <div style="font-size:12px; color:var(--text-secondary);">All requirements met</div>
+          <span class="tag tag-success" style="margin-top:8px;">✓ Cleared</span>
+        </div>
+        {% else %}
+        <div style="padding:14px; border:1px solid var(--layer-stroke-2); border-radius:var(--radius-md); border-top:3px solid var(--layer-stroke-2); opacity:0.6;">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Step 4</div>
+          <div style="font-weight:700; color:var(--text-primary); margin-bottom:2px;">Final Clearance</div>
+          <div style="font-size:12px; color:var(--text-secondary);">Pending steps above</div>
+          <span class="tag tag-neutral" style="margin-top:8px;">Pending</span>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Task list (read-only for employee) -->
+  {% if tasks %}
+  <div class="pane">
+    <div class="pane-header">
+      <div class="pane-icon">✓</div>
+      My Clearance Tasks
+      <span style="margin-left:auto; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">
+        {{ completed }}/{{ total }} complete
+      </span>
+    </div>
+    <div style="padding:0 20px;">
+      {% regroup tasks by task.department as dept_groups %}
+      {% for group in dept_groups %}
+        <div class="section-sep">{{ group.grouper }}</div>
+        {% for et in group.list %}
+        <div class="task-row">
+          <div class="task-body">
+            <div class="task-name">{{ et.task.task_detail }}</div>
+            {% if et.completed_at %}
+              <div class="task-sub">Completed {{ et.completed_at|date:"d M Y" }}</div>
+            {% endif %}
+            {% if et.notes %}
+              <div class="task-sub" style="font-style:italic;">"{{ et.notes }}"</div>
+            {% endif %}
+          </div>
+          <span class="tag
+            {% if et.status == 'completed' %}tag-success
+            {% elif et.status == 'waived' %}tag-neutral
+            {% elif et.status == 'in_progress' %}tag-accent
+            {% else %}tag-warning{% endif %}">
+            {{ et.get_status_display }}
+          </span>
+        </div>
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  {% endif %} {# end if process #}
+
+</div>
+</body>
+</html>

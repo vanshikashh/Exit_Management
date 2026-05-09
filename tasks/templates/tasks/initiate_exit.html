@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Initiate Exit — Clovia HR</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png" alt="Clovia">
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <a href="{% url 'hr_dashboard' %}" class="titlebar-nav-item">Dashboard</a>
+    <span style="color:var(--text-tertiary); font-size:11px; padding:0 2px;">/</span>
+    <span class="titlebar-nav-item active">Initiate Exit</span>
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HR</span>
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas" style="max-width:600px;">
+
+  <div style="margin-bottom:12px;">
+    <a href="{% url 'hr_dashboard' %}" class="cmd-btn cmd-btn-secondary">← Back to Dashboard</a>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>Initiate Exit Process</h1>
+      <p>Select an employee to begin their offboarding. Their department tasks will be assigned automatically.</p>
+    </div>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="pane">
+    <div class="pane-header">
+      <div class="pane-icon">+</div>
+      New Exit Process
+    </div>
+    <div class="pane-body">
+      <form method="post" novalidate>
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+          <div class="alert alert-error">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="form-group">
+          <label class="field-label" for="{{ form.employee.id_for_label }}">{{ form.employee.label }}</label>
+          {{ form.employee }}
+          {% if form.employee.help_text %}
+            <p style="font-size:11px; color:var(--text-tertiary); margin-top:4px;">{{ form.employee.help_text }}</p>
+          {% endif %}
+          {% if form.employee.errors %}<p class="field-error">{{ form.employee.errors }}</p>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="field-label" for="{{ form.last_working_date.id_for_label }}">{{ form.last_working_date.label }}</label>
+          {{ form.last_working_date }}
+          {% if form.last_working_date.errors %}<p class="field-error">{{ form.last_working_date.errors }}</p>{% endif %}
+        </div>
+
+        <div class="form-group" style="margin-top:14px;">
+          <label class="field-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+          {{ form.notes }}
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--layer-stroke);">
+          <button type="submit" class="btn-action">Initiate Process</button>
+          <a href="{% url 'hr_dashboard' %}" class="cmd-btn cmd-btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="pane" style="margin-top:12px;">
+    <div class="pane-header">
+      <div class="pane-icon" style="font-size:8px;">i</div>
+      What happens next
+    </div>
+    <div class="pane-body" style="font-size:13px; color:var(--text-secondary);">
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span class="tag tag-accent" style="flex-shrink:0; margin-top:1px;">1</span>
+          <span>The employee is notified and can log in to see their offboarding status and exit interview form.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span class="tag tag-accent" style="flex-shrink:0; margin-top:1px;">2</span>
+          <span>All department-specific clearance tasks are automatically assigned to the employee.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span class="tag tag-accent" style="flex-shrink:0; margin-top:1px;">3</span>
+          <span>HR and the HOD can track task completion and interview submission from the dashboard.</span>
+        </div>
+        <div style="display:flex; gap:10px; align-items:flex-start;">
+          <span class="tag tag-accent" style="flex-shrink:0; margin-top:1px;">4</span>
+          <span>Once all tasks are complete and the interview is submitted, the process is marked as Cleared automatically.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

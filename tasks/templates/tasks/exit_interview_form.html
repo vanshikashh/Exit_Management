@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exit Interview — Clovia</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png" alt="Clovia">
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <span class="titlebar-nav-item active">Exit Interview</span>
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ employee.first_name|first|upper|default:employee.username|first|upper }}</div>
+      <span>{{ employee.get_full_name|default:employee.username }}</span>
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas">
+
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>Exit Interview Questionnaire</h1>
+      <p>Your responses are confidential and help Clovia improve for future employees.</p>
+    </div>
+    {% if already_submitted %}
+      <span class="tag tag-warning">Read-only · Already submitted</span>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if already_submitted %}
+    <div class="alert alert-warning">
+      Submitted. Contact HR to request changes. &nbsp;<a href="{% url 'form_success' %}"><strong>View confirmation →</strong></a>
+    </div>
+  {% endif %}
+
+  <form method="post" novalidate id="exit-form">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <div class="alert alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <!-- ── 1 · Employee Information ────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">1</div>
+        Employee Information
+      </div>
+      <div class="pane-body">
+        <div class="form-group">
+          <label class="field-label" for="{{ form.supervisor_name.id_for_label }}">{{ form.supervisor_name.label }}</label>
+          {{ form.supervisor_name }}
+          {% if form.supervisor_name.errors %}<p class="field-error">{{ form.supervisor_name.errors }}</p>{% endif %}
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="field-label" for="{{ form.initial_employment_date.id_for_label }}">{{ form.initial_employment_date.label }}</label>
+            {{ form.initial_employment_date }}
+            {% if form.initial_employment_date.errors %}<p class="field-error">{{ form.initial_employment_date.errors }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="field-label" for="{{ form.last_date_of_employment.id_for_label }}">{{ form.last_date_of_employment.label }}</label>
+            {{ form.last_date_of_employment }}
+            {% if form.last_date_of_employment.errors %}<p class="field-error">{{ form.last_date_of_employment.errors }}</p>{% endif %}
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="field-label" for="{{ form.current_position.id_for_label }}">{{ form.current_position.label }}</label>
+          {{ form.current_position }}
+          {% if form.current_position.errors %}<p class="field-error">{{ form.current_position.errors }}</p>{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 2 · Decision & Reason ───────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">2</div>
+        Decision &amp; Reason for Leaving
+      </div>
+      <div class="pane-body">
+        <div class="form-group">
+          <p class="question-text">{{ form.decision_time.label }}</p>
+          <div class="radio-segment">{{ form.decision_time }}</div>
+          {% if form.decision_time.errors %}<p class="field-error">{{ form.decision_time.errors }}</p>{% endif %}
+          <div style="margin-top:10px;">
+            <label class="field-label">Comments (optional)</label>
+            {{ form.decision_time_comments }}
+          </div>
+        </div>
+
+        <div class="section-sep">Primary Reason</div>
+
+        <div class="form-group">
+          <p class="question-text">{{ form.reasons.label }}</p>
+          <div class="radio-segment">{{ form.reasons }}</div>
+          {% if form.reasons.errors %}<p class="field-error">{{ form.reasons.errors }}</p>{% endif %}
+          <div style="margin-top:10px;">
+            <label class="field-label">Comments (optional)</label>
+            {{ form.reason_comments }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 3 · Circumstances ────────────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">3</div>
+        Circumstances of Departure
+      </div>
+      <div class="pane-body">
+        <div class="form-group">
+          <label class="win-check-row" for="{{ form.specific_event.id_for_label }}">
+            {{ form.specific_event }}
+            <span class="win-check-label">{{ form.specific_event.label }}</span>
+          </label>
+          <div style="margin-top:8px;">
+            <label class="field-label">If yes, please explain</label>
+            {{ form.event_issue_comments }}
+          </div>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="win-check-row" for="{{ form.discuss_supervisor.id_for_label }}">
+            {{ form.discuss_supervisor }}
+            <span class="win-check-label">{{ form.discuss_supervisor.label }}</span>
+          </label>
+          <div style="margin-top:8px;">
+            <label class="field-label">Comments</label>
+            {{ form.discuss_supervisor_comments }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 4 · Satisfaction Ratings ────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">4</div>
+        Satisfaction Ratings
+        <span style="font-weight:400; font-size:11px; margin-left:4px; text-transform:none; letter-spacing:0;">1 = Poor &nbsp;·&nbsp; 5 = Excellent</span>
+      </div>
+      <div class="pane-body">
+
+
+        <div style="padding:12px 0; border-bottom:1px solid var(--layer-stroke);">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.training_quality.label }}</p>
+          <div class="radio-rating">{{ form.training_quality }}</div>
+          {% if form.training_quality.errors %}<p class="field-error">{{ form.training_quality.errors }}</p>{% endif %}
+          <div style="margin-top:8px;">{{ form.training_quality_comments }}</div>
+        </div>
+
+        <div style="padding:12px 0; border-bottom:1px solid var(--layer-stroke);">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.supervisor_relationship.label }}</p>
+          <div class="radio-rating">{{ form.supervisor_relationship }}</div>
+          <div style="margin-top:8px;">{{ form.supervisor_relationship_comments }}</div>
+        </div>
+
+        <div style="padding:12px 0; border-bottom:1px solid var(--layer-stroke);">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.employee_relationship.label }}</p>
+          <div class="radio-rating">{{ form.employee_relationship }}</div>
+          <div style="margin-top:8px;">{{ form.employee_relationship_comments }}</div>
+        </div>
+
+        <div style="padding:12px 0; border-bottom:1px solid var(--layer-stroke);">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.salary.label }}</p>
+          <div class="radio-rating">{{ form.salary }}</div>
+          <div style="margin-top:8px;">{{ form.salary_comments }}</div>
+        </div>
+
+        <div style="padding:12px 0; border-bottom:1px solid var(--layer-stroke);">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.workload.label }}</p>
+          <div class="radio-rating">{{ form.workload }}</div>
+        </div>
+
+        <div style="padding:12px 0;">
+          <p class="question-text" style="margin-bottom:8px;">{{ form.satisfaction.label }}</p>
+          <div class="radio-rating">{{ form.satisfaction }}</div>
+          <div style="margin-top:8px;">{{ form.satisfaction_comments }}</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── 5 · Additional Feedback ──────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">5</div>
+        Additional Feedback
+      </div>
+      <div class="pane-body">
+
+        <div class="form-group">
+          <label class="win-check-row" for="{{ form.problems.id_for_label }}">
+            {{ form.problems }}
+            <span class="win-check-label">{{ form.problems.label }}</span>
+          </label>
+          <div style="margin-top:8px;">{{ form.problems_comments }}</div>
+        </div>
+
+        <div class="section-sep">Open Questions</div>
+
+        <div class="form-group">
+          <label class="field-label">{{ form.enjoy_most.label }}</label>
+          {{ form.enjoy_most }}
+        </div>
+        <div class="form-group">
+          <label class="field-label">{{ form.enjoy_least.label }}</label>
+          {{ form.enjoy_least }}
+        </div>
+
+        <div class="section-sep">Final Questions</div>
+
+        <div class="form-group">
+          <label class="win-check-row" for="{{ form.recommend.id_for_label }}">
+            {{ form.recommend }}
+            <span class="win-check-label">{{ form.recommend.label }}</span>
+          </label>
+          <div style="margin-top:8px;">{{ form.recommend_comments }}</div>
+        </div>
+        <div class="form-group" style="margin-top:10px;">
+          <label class="win-check-row" for="{{ form.reapply.id_for_label }}">
+            {{ form.reapply }}
+            <span class="win-check-label">{{ form.reapply.label }}</span>
+          </label>
+          <div style="margin-top:8px;">{{ form.reapply_comments }}</div>
+        </div>
+        <div class="form-group" style="margin-top:14px;">
+          <label class="field-label">{{ form.additional_comments.label }}</label>
+          {{ form.additional_comments }}
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 6 · Sign-Off ─────────────────────────────────────── -->
+    <div class="pane">
+      <div class="pane-header">
+        <div class="pane-icon">6</div>
+        Interview Sign-Off
+      </div>
+      <div class="pane-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="field-label">{{ form.interviewer_name.label }}</label>
+            {{ form.interviewer_name }}
+            {% if form.interviewer_name.errors %}<p class="field-error">{{ form.interviewer_name.errors }}</p>{% endif %}
+          </div>
+          <div class="form-group">
+            <label class="field-label">{{ form.interview_date_time.label }}</label>
+            {{ form.interview_date_time }}
+            {% if form.interview_date_time.errors %}<p class="field-error">{{ form.interview_date_time.errors }}</p>{% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if not already_submitted %}
+    <div style="display:flex; align-items:center; justify-content:flex-end; gap:12px; margin-top:20px; padding:16px 20px; background:var(--layer-2); border:1px solid var(--layer-stroke); border-radius:var(--radius-md);">
+      <p style="font-size:12px; color:var(--text-tertiary); margin:0; flex:1;">
+        Once submitted your responses cannot be edited. Contact HR for corrections.
+      </p>
+      <button type="submit" class="btn-action">
+        Submit Interview
+      </button>
+    </div>
+    {% endif %}
+
+  </form>
+</div>
+</body>
+</html>
