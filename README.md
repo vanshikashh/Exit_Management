@@ -1,112 +1,164 @@
 # Exit Management System
 
-A Django web application for managing the employee offboarding process at Clovia. Employees complete a structured exit interview, and HR staff can review all submissions and track department-level offboarding checklists.
+A full-stack Django web application built during my internship at **Clovia Pvt Ltd** to digitise and automate the employee offboarding process. The system replaces paper-based exit workflows with a structured, role-based platform covering exit interviews, department clearance tracking, and an immutable audit trail.
+
+**Live repository:** [github.com/vanshikashh/Exit_Management](https://github.com/vanshikashh/Exit_Management)
 
 ---
 
-## Features
+## What it does
 
-- **Employee exit interview** — structured questionnaire with ratings, multiple-choice, and open-ended responses
-- **Duplicate submission guard** — each employee can only submit once; re-visits show their existing response
-- **Offboarding task checklist** — department-specific tasks tracked per employee (IT handover, access revocation, etc.)
-- **HR dashboard** — paginated list of all submissions with key metrics at a glance
-- **Role-based access** — Employee, HOD, and HR roles with appropriate view restrictions
-- **Django admin** — full admin interface for HR and superusers
+When an employee resigns, HR initiates their exit process on this platform. From that point, the system:
 
----
-
-## Setup
-
-### 1. Clone / unzip the project
-
-```bash
-cd exit_management_fixed
-```
-
-### 2. Create a virtual environment
-
-```bash
-python -m venv venv
-source venv/bin/activate      # Windows: venv\Scripts\activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-### 4. Apply database migrations
-
-```bash
-python manage.py migrate
-```
-
-### 5. Create a superuser (for admin access)
-
-```bash
-python manage.py createsuperuser
-```
-
-### 6. Run the development server
-
-```bash
-python manage.py runserver
-```
-
-Visit [http://127.0.0.1:8000/exit-interview/](http://127.0.0.1:8000/exit-interview/)
+- Assigns clearance tasks automatically across **all departments** (Finance, IT, Legal, HR, etc.)
+- Lets each department's HOD track and update only their own tasks for every exiting employee
+- Prompts the employee to complete a structured **16-question exit interview**
+- Auto-progresses the process status (`Initiated → In Progress → Cleared`) based on real data
+- Logs every action immutably in an **audit trail** — who did what, when, and what changed
+- Gives HR a live dashboard with aggregate satisfaction ratings across 5 dimensions
 
 ---
 
-## URL Routes
+## Roles
 
-| URL | View | Access |
-|-----|------|--------|
-| `/login/` | Login page | Public |
-| `/logout/` | Logout | Authenticated |
-| `/exit-interview/` | Exit interview form | Authenticated employees |
-| `/exit-interview/success/` | Submission confirmation | Authenticated employees |
-| `/hr/dashboard/` | HR submissions list | HR role only |
-| `/hr/checklist/<user_id>/` | Offboarding checklist | HR role only |
-| `/admin/` | Django admin | Staff/superuser |
+| Role | Access |
+|------|--------|
+| **HR** | Initiate exits, manage standard tasks, view full dashboard and audit log |
+| **HOD** | View all exiting employees, update tasks owned by their department only |
+| **Employee** | View own offboarding status and department-wise clearance progress |
+| **Admin** | Full database access via Django admin panel |
+
+---
+
+## Tech Stack
+
+- **Backend:** Python, Django, Django ORM
+- **Database:** SQLite (development)
+- **Frontend:** HTML, CSS (custom Windows 11 Fluent Design system — no UI library)
+- **Auth:** Django AbstractUser with role-based access control
+- **Version control:** Git
+
+---
+
+## Key Technical Features
+
+- **Role-based access control** — 3 user types with separate dashboards, login redirects, and enforced view permissions
+- **Two task types** — Standard tasks (HR-managed, everyone gets them) and Departmental tasks (HOD-managed, scoped to owning department)
+- **Auto task assignment** — On exit initiation, all tasks from all departments are bulk-assigned in a single `bulk_create` call
+- **Annotation over N+1** — Dashboard queries use Django `Count` with conditional filters via `annotate()` — O(1) queries regardless of employee count
+- **Immutable audit log** — `AuditLog.save()` raises `ValueError` on updates; every HR and HOD action is permanently recorded with actor, subject, old value, new value
+- **State machine** — `ExitProcess.refresh_status()` auto-computes process state after every task update or interview submission
+- **CSRF-hardened logout** — POST-only logout endpoint; GET requests do not log out the user
+- **51 automated tests** — covering models, views, form validation, role enforcement, task ownership, and audit logging
 
 ---
 
 ## Project Structure
 
 ```
-exit_management_fixed/
-├── Exit_management/          # Django project config
-│   ├── settings.py
-│   └── urls.py
+Exit_Management/
+├── Exit_management/          # Django project config (settings, urls, wsgi)
 ├── tasks/                    # Main application
-│   ├── models.py             # CustomUser, Department, Task, ExitInterview, EmployeeTask
-│   ├── views.py              # All views
-│   ├── forms.py              # ExitInterviewForm
-│   ├── admin.py              # Admin registrations
+│   ├── models.py             # CustomUser, Department, Task, EmployeeTask,
+│   │                         # ExitProcess, ExitInterview, AuditLog
+│   ├── views.py              # All views with role guards and business logic
+│   ├── forms.py              # ExitInterviewForm, InitiateExitForm, TaskForm
+│   ├── admin.py              # Fully customised admin with badges and summaries
 │   ├── urls.py               # App URL patterns
-│   └── templates/tasks/      # HTML templates
-├── static/css/styles.css     # Stylesheet
+│   ├── tests.py              # 51 tests
+│   └── templates/tasks/      # HTML templates (login, dashboards, checklist,
+│                             # interview form, audit log, status page)
+├── static/css/styles.css     # Custom design system (Win11 Fluent)
 ├── requirements.txt
 └── manage.py
 ```
 
 ---
 
-## Roles
+## Setup
 
-| Role | Permissions |
-|------|-------------|
-| **Employee** | Submit and view own exit interview |
-| **HOD** | Same as Employee (department head oversight via admin) |
-| **HR** | View all interviews, manage offboarding checklists, full admin access |
+```bash
+# Clone the repo
+git clone https://github.com/vanshikashh/Exit_Management.git
+cd Exit_Management
+
+# Create and activate virtual environment
+python -m venv venv
+venv\Scripts\activate        # Windows
+source venv/bin/activate     # Mac/Linux
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Apply migrations
+python manage.py migrate
+
+# Create a superuser (for admin access)
+python manage.py createsuperuser
+
+# Run the server
+python manage.py runserver
+```
+
+Visit `http://127.0.0.1:8000`
 
 ---
 
-## Notes for production
+## Seeding test data
 
-- Change `SECRET_KEY` in `settings.py` (load from environment variable)
-- Set `DEBUG = False`
-- Add your domain to `ALLOWED_HOSTS`
-- Configure a production database (PostgreSQL recommended)
-- Run `python manage.py collectstatic`
+```python
+# Run: python manage.py shell
+from tasks.models import CustomUser, Department, Task
+
+eng = Department.objects.create(department_id=1, department_name='Engineering')
+fin = Department.objects.create(department_id=2, department_name='Finance')
+hr_dept = Department.objects.create(department_id=3, department_name='HR')
+
+CustomUser.objects.create_user('hr_user',    password='Pass@123', role='HR',       department=hr_dept, first_name='Priya',  last_name='Sharma')
+CustomUser.objects.create_user('hod_eng',    password='Pass@123', role='HOD',      department=eng,     first_name='Rahul',  last_name='Mehta')
+CustomUser.objects.create_user('hod_fin',    password='Pass@123', role='HOD',      department=fin,     first_name='Sneha',  last_name='Kapoor')
+CustomUser.objects.create_user('emp_alice',  password='Pass@123', role='Employee', department=eng,     first_name='Alice',  last_name='Roy')
+CustomUser.objects.create_user('emp_bob',    password='Pass@123', role='Employee', department=fin,     first_name='Bob',    last_name='Khan')
+
+# Standard tasks — apply to every employee, managed by HR
+Task.objects.create(task_detail='Return company ID card', task_type='standard')
+Task.objects.create(task_detail='Complete exit interview form', task_type='standard')
+
+# Departmental tasks — managed by that dept's HOD
+Task.objects.create(task_detail='Return laptop and accessories',       task_type='departmental', department=eng)
+Task.objects.create(task_detail='Revoke system and email access',      task_type='departmental', department=eng)
+Task.objects.create(task_detail='Complete knowledge transfer document',task_type='departmental', department=eng)
+Task.objects.create(task_detail='Clear all pending dues',              task_type='departmental', department=fin)
+Task.objects.create(task_detail='Submit final expense report',         task_type='departmental', department=fin)
+Task.objects.create(task_detail='Return company credit card',          task_type='departmental', department=fin)
+```
+
+---
+
+## URL Reference
+
+| URL | Role | Page |
+|-----|------|------|
+| `/login/` | All | Sign in |
+| `/my-status/` | Employee | 4-step offboarding tracker with dept clearance breakdown |
+| `/exit-interview/` | Employee | 16-question exit interview form |
+| `/hod/dashboard/` | HOD | All exiting employees + own dept tasks (editable) |
+| `/hr/dashboard/` | HR | Full dashboard with stats and aggregate ratings |
+| `/hr/initiate/` | HR | Initiate a new exit process |
+| `/hr/checklist/<id>/` | HR | Full task checklist for one employee |
+| `/hr/audit-log/` | HR | Filterable immutable audit log |
+| `/admin/` | Superuser | Django admin — full DB access |
+
+---
+
+## Running tests
+
+```bash
+python manage.py test tasks
+```
+
+Expected output: `Ran 41 tests in Xs — OK`
+
+---
+
+*Built with Python · Django · SQLite · HTML/CSS · Git*
