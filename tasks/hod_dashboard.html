@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HOD Dashboard — Clovia Exit Management</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <img src="https://logos-world.net/wp-content/uploads/2022/12/Clovia-Logo.png" alt="Clovia">
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <a href="{% url 'hod_dashboard' %}" class="titlebar-nav-item active">My Tasks</a>
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      {% if is_hod %}
+        <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HOD · {{ department }}</span>
+      {% else %}
+        <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HR</span>
+      {% endif %}
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas">
+
+  <div class="page-header">
+    <div class="page-header-text">
+      {% if is_hod %}
+        <h1>{{ department }} — Clearance Tasks</h1>
+        <p>
+          Tasks your department is responsible for, across all exiting employees.
+          Update statuses for your department's tasks below.
+        </p>
+      {% else %}
+        <h1>All Clearance Tasks</h1>
+        <p>Overview across all departments and employees.</p>
+      {% endif %}
+    </div>
+    <span style="font-size:12px; color:var(--text-tertiary);">{{ processes|length }} active exit{{ processes|length|pluralize }}</span>
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{% if message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}success{% endif %}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if processes %}
+    {% for p in processes %}
+
+    {# Skip employees who have no tasks for this HOD's dept #}
+    {% if is_hod and p.my_total == 0 %}
+    {% else %}
+
+    <div class="pane" style="margin-bottom:16px;">
+
+      <!-- Employee header row -->
+      <div style="padding:12px 20px; background:rgba(0,0,0,0.02); border-bottom:1px solid var(--layer-stroke); display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:12px;">
+          <div style="width:36px; height:36px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:14px; flex-shrink:0;">
+            {{ p.employee.first_name|first|upper|default:p.employee.username|first|upper }}
+          </div>
+          <div>
+            <div style="font-weight:700; font-size:14px;">{{ p.employee.get_full_name|default:p.employee.username }}</div>
+            <div style="font-size:11px; color:var(--text-tertiary);">
+              {{ p.employee.department|default:"No dept" }} &nbsp;·&nbsp;
+              Last day: {{ p.last_working_date|date:"d M Y"|default:"Not set" }}
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+          <div style="font-size:11px; color:var(--text-tertiary);">
+            Overall: {{ p.task_done }}/{{ p.task_total }} tasks
+          </div>
+          <div style="width:80px;">
+            <div class="progress-bar" style="margin:0;">
+              <div class="progress-fill" style="width:{{ p.progress_pct }}%;{% if p.progress_pct == 100 %}background:var(--success);{% endif %}"></div>
+            </div>
+          </div>
+          {% if is_hod %}
+            {% if p.my_cleared %}
+              <span class="tag tag-success">✓ {{ department }} cleared</span>
+            {% else %}
+              <span class="tag tag-warning">{{ p.my_done }}/{{ p.my_total }} {{ department }} tasks pending</span>
+            {% endif %}
+          {% endif %}
+          <span class="tag {% if p.status == 'cleared' %}tag-success{% elif p.status == 'initiated' %}tag-warning{% else %}tag-accent{% endif %}">
+            {{ p.get_status_display }}
+          </span>
+        </div>
+      </div>
+
+      <!-- Dept tasks — editable by HOD -->
+      {% if is_hod %}
+        <div style="padding:0 20px;">
+          {% if p.my_tasks %}
+            {% for et in p.my_tasks %}
+            <form method="post" action="{% url 'hod_update_task' et.pk %}" style="margin:0;">
+              {% csrf_token %}
+              <div class="task-row">
+                <div class="task-body">
+                  <div class="task-name">{{ et.task.task_detail }}</div>
+                  {% if et.completed_at %}
+                    <div class="task-sub">Completed {{ et.completed_at|date:"d M Y, H:i" }}</div>
+                  {% endif %}
+                  {% if et.notes %}
+                    <div class="task-sub" style="font-style:italic;">"{{ et.notes }}"</div>
+                  {% endif %}
+                  <input type="text" name="notes" class="task-note-input"
+                         placeholder="Add a note…" value="{{ et.notes|default:'' }}">
+                </div>
+                <div class="task-controls">
+                  <select name="status" class="win-select">
+                    <option value="pending"     {% if et.status == 'pending'     %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if et.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed"   {% if et.status == 'completed'   %}selected{% endif %}>Completed</option>
+                    <option value="waived"      {% if et.status == 'waived'      %}selected{% endif %}>Waived</option>
+                  </select>
+                  <button type="submit" class="cmd-btn cmd-btn-primary">Save</button>
+                </div>
+              </div>
+            </form>
+            {% endfor %}
+          {% else %}
+            <div style="padding:16px 0; color:var(--text-tertiary); font-size:13px;">
+              No {{ department }} tasks defined yet. Add them via Admin → Tasks.
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    </div>
+
+    {% endif %}{# end skip block #}
+
+    {% empty %}
+    <div class="pane">
+      <div class="pane-body" style="text-align:center; padding:52px;">
+        <div style="font-size:32px; opacity:0.3; margin-bottom:10px;">📋</div>
+        <div style="font-weight:600; color:var(--text-secondary); margin-bottom:4px;">No active exit processes</div>
+        <div style="font-size:12px; color:var(--text-tertiary);">Employees being offboarded will appear here.</div>
+      </div>
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="pane">
+      <div class="pane-body" style="text-align:center; padding:52px;">
+        <div style="font-size:32px; opacity:0.3; margin-bottom:10px;">📋</div>
+        <div style="font-weight:600; color:var(--text-secondary); margin-bottom:4px;">No active exit processes</div>
+        <div style="font-size:12px; color:var(--text-tertiary);">Employees being offboarded will appear here.</div>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+</body>
+</html>

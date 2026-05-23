@@ -15,15 +15,16 @@
     <span class="titlebar-app-name">Exit Management</span>
   </div>
   <div class="titlebar-nav">
-    <a href="{% url 'hr_dashboard' %}" class="titlebar-nav-item">Dashboard</a>
+    {% if request.user.is_hr %}<a href="{% url 'hr_dashboard' %}" class="titlebar-nav-item">Dashboard</a>{% else %}<a href="{% url 'hod_dashboard' %}" class="titlebar-nav-item">Dashboard</a>{% endif %}
     <span style="color:var(--text-tertiary); font-size:11px; padding:0 2px;">/</span>
     <span class="titlebar-nav-item active">Checklist</span>
+    {% if request.user.is_hr %}<a href="{% url 'audit_log' %}" class="titlebar-nav-item">Audit Log</a>{% endif %}
   </div>
   <div class="titlebar-right">
     <div class="user-badge">
       <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
       <span>{{ request.user.get_full_name|default:request.user.username }}</span>
-      <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HR</span>
+      {% if request.user.is_hr %}<span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HR</span>{% else %}<span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HOD</span>{% endif %}
     </div>
     <form method="post" action="{% url 'logout' %}" style="margin:0;">
       {% csrf_token %}
@@ -35,19 +36,17 @@
 <div class="page-canvas">
 
   <div style="margin-bottom:12px;">
-    <a href="{% url 'hr_dashboard' %}" class="cmd-btn cmd-btn-secondary">← Back</a>
+    {% if request.user.is_hr %}<a href="{% url 'hr_dashboard' %}" class="cmd-btn cmd-btn-secondary">← Back</a>{% else %}<a href="{% url 'hod_dashboard' %}" class="cmd-btn cmd-btn-secondary">← Back</a>{% endif %}
   </div>
 
   <div class="page-header">
     <div class="page-header-text">
       <h1>{{ employee.get_full_name|default:employee.username }}</h1>
-      <p>{{ employee.department|default:"No department" }} &nbsp;·&nbsp; {{ employee.role }} &nbsp;·&nbsp; Offboarding checklist</p>
+      <p>{{ employee.department|default:"No department" }} &nbsp;·&nbsp; Offboarding checklist</p>
     </div>
-    {% if total_tasks %}
-      <span class="tag {% if progress_pct == 100 %}tag-success{% else %}tag-accent{% endif %}" style="font-size:12px; padding:4px 12px;">
-        {{ completed }}/{{ total_tasks }} done
-      </span>
-    {% endif %}
+    <span class="tag {% if process.status == 'cleared' %}tag-success{% elif process.status == 'initiated' %}tag-warning{% else %}tag-accent{% endif %}" style="font-size:12px; padding:5px 14px;">
+      {{ process.get_status_display }}
+    </span>
   </div>
 
   {% if messages %}
@@ -56,34 +55,15 @@
     {% endfor %}
   {% endif %}
 
-  <!-- Progress pane -->
-  {% if total_tasks %}
+  <!-- Summary -->
   <div class="pane" style="margin-bottom:14px;">
-    <div class="pane-body" style="padding:14px 20px;">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-        <span style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Progress</span>
-        <span style="font-size:22px; font-weight:800; color:{% if progress_pct == 100 %}var(--success){% else %}var(--accent){% endif %};">{{ progress_pct }}%</span>
-      </div>
-      <div class="progress-bar" style="height:6px;">
-        <div class="progress-fill" style="width:{{ progress_pct }}%; {% if progress_pct == 100 %}background:var(--success);{% endif %}"></div>
-      </div>
-    </div>
-  </div>
-  {% endif %}
-
-  <!-- Interview status summary -->
-  <div class="pane" style="margin-bottom:12px;">
-    <div class="pane-header">
-      <div class="pane-icon">i</div>
-      Offboarding Summary
-    </div>
     <div class="pane-body" style="display:flex; gap:14px; flex-wrap:wrap;">
       <div style="flex:1; min-width:140px; padding:12px 16px; background:var(--layer-3); border:1px solid var(--layer-stroke); border-radius:var(--radius-md);">
         <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Exit Interview</div>
         {% if interview %}
           <span class="tag tag-success">✓ Submitted {{ interview.interview_date_time|date:"d M Y" }}</span>
         {% else %}
-          <span class="tag tag-warning">Not yet submitted</span>
+          <span class="tag tag-warning">Not submitted</span>
         {% endif %}
       </div>
       <div style="flex:1; min-width:140px; padding:12px 16px; background:var(--layer-3); border:1px solid var(--layer-stroke); border-radius:var(--radius-md);">
@@ -91,78 +71,110 @@
         <span style="font-size:13px; font-weight:600;">{{ process.last_working_date|date:"d M Y"|default:"Not set" }}</span>
       </div>
       <div style="flex:1; min-width:140px; padding:12px 16px; background:var(--layer-3); border:1px solid var(--layer-stroke); border-radius:var(--radius-md);">
-        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Overall Status</div>
-        <span class="tag {% if process.status == 'cleared' %}tag-success{% elif process.status == 'initiated' %}tag-warning{% else %}tag-accent{% endif %}" style="font-size:12px;">
-          {{ process.get_status_display }}
-        </span>
+        <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-tertiary); margin-bottom:4px;">Overall Progress</div>
+        <div style="font-size:18px; font-weight:800; color:{% if progress_pct == 100 %}var(--success){% else %}var(--accent){% endif %};">{{ progress_pct }}%</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:{{ progress_pct }}%;{% if progress_pct == 100 %}background:var(--success);{% endif %}"></div></div>
       </div>
     </div>
   </div>
 
-  {% if not can_edit %}
-  <div class="alert alert-warning" style="margin-bottom:12px;">
-    You are viewing this checklist in read-only mode. Only HR can update task statuses.
-  </div>
-  {% endif %}
-
-  {% if assigned_tasks %}
-    {% regroup assigned_tasks by task.department as dept_groups %}
-    {% for group in dept_groups %}
-    <div class="pane" style="margin-bottom:12px;">
-      <div class="pane-header">
-        <div class="pane-icon" style="font-size:8px;">●</div>
-        {{ group.grouper }}
-      </div>
-      <div class="pane-body" style="padding:0 20px;">
-        {% for et in group.list %}
-        {% if can_edit %}
-        <form method="post" style="margin:0;">
-          {% csrf_token %}
-          <input type="hidden" name="task_id" value="{{ et.pk }}">
-          <div class="task-row">
-            <div class="task-body">
-              <div class="task-name">{{ et.task.task_detail }}</div>
-              {% if et.completed_at %}<div class="task-sub">Completed {{ et.completed_at|date:"d M Y, H:i" }}</div>{% endif %}
-              <input type="text" name="notes" class="task-note-input" placeholder="Add a note…" value="{{ et.notes|default:'' }}">
-            </div>
-            <div class="task-controls">
-              <select name="status" class="win-select">
-                {% for val, label in status_choices %}
-                  <option value="{{ val }}" {% if et.status == val %}selected{% endif %}>{{ label }}</option>
-                {% endfor %}
-              </select>
-              <button type="submit" class="cmd-btn cmd-btn-primary">Save</button>
-            </div>
-          </div>
-        </form>
-        {% else %}
+  <!-- Standard tasks — HR editable -->
+  {% if standard_tasks %}
+  <div class="pane" style="margin-bottom:12px;">
+    <div class="pane-header">
+      <div class="pane-icon">★</div>
+      Standard Tasks
+      <span style="margin-left:6px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">Managed by HR · applies to every employee</span>
+    </div>
+    <div class="pane-body" style="padding:0 20px;">
+      {% for et in standard_tasks %}
+      <form method="post" style="margin:0;">
+        {% csrf_token %}
+        <input type="hidden" name="task_id" value="{{ et.pk }}">
         <div class="task-row">
           <div class="task-body">
             <div class="task-name">{{ et.task.task_detail }}</div>
             {% if et.completed_at %}<div class="task-sub">Completed {{ et.completed_at|date:"d M Y, H:i" }}</div>{% endif %}
-            {% if et.notes %}<div class="task-sub" style="font-style:italic;">"{{ et.notes }}"</div>{% endif %}
+            <input type="text" name="notes" class="task-note-input" placeholder="Add a note…" value="{{ et.notes|default:'' }}">
           </div>
-          <span class="tag {% if et.status == 'completed' %}tag-success{% elif et.status == 'waived' %}tag-neutral{% elif et.status == 'in_progress' %}tag-accent{% else %}tag-warning{% endif %}">
-            {{ et.get_status_display }}
-          </span>
+          <div class="task-controls">
+            <select name="status" class="win-select">
+              {% for val, label in status_choices %}
+                <option value="{{ val }}" {% if et.status == val %}selected{% endif %}>{{ label }}</option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="cmd-btn cmd-btn-primary">Save</button>
+          </div>
         </div>
-        {% endif %}
-        {% endfor %}
-      </div>
+      </form>
+      {% endfor %}
     </div>
-    {% endfor %}
+  </div>
+  {% endif %}
 
-  {% else %}
-    <div class="pane">
-      <div class="pane-body" style="text-align:center; padding:48px 20px;">
-        <div style="font-size:28px; opacity:0.3; margin-bottom:10px;">📋</div>
-        <div style="font-weight:600; color:var(--text-secondary); margin-bottom:6px;">No tasks defined</div>
-        <div style="font-size:12px; color:var(--text-tertiary);">
-          Add offboarding templates for <strong>{{ employee.department|default:"this department" }}</strong>
-          via <a href="{% url 'admin:tasks_task_add' %}">Admin → Tasks</a>.
+  <!-- Departmental tasks — grouped by owning dept, read-only for HR -->
+  {% for dept, tasks in dept_groups.items %}
+  <div class="pane" style="margin-bottom:10px;">
+    <div class="pane-header">
+      <div class="pane-icon" style="font-size:8px;">●</div>
+      {{ dept.department_name }}
+      <span style="margin-left:6px; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">Managed by {{ dept.department_name }} HOD</span>
+      <span style="margin-left:auto;">
+        {% with done=0 total=tasks|length %}
+        {% for et in tasks %}{% if et.status == 'completed' or et.status == 'waived' %}{% endif %}{% endfor %}
+        {% endwith %}
+        {% for et in tasks %}{% if forloop.last %}
+          <span class="tag tag-neutral" style="font-size:10px;">{{ tasks|length }} task{{ tasks|length|pluralize }}</span>
+        {% endif %}{% endfor %}
+      </span>
+    </div>
+    <div class="pane-body" style="padding:0 20px;">
+      {% for et in tasks %}
+      <div class="task-row">
+        <div class="task-body">
+          <div class="task-name">{{ et.task.task_detail }}</div>
+          {% if et.completed_at %}<div class="task-sub">Completed {{ et.completed_at|date:"d M Y, H:i" }}</div>{% endif %}
+          {% if et.notes %}<div class="task-sub" style="font-style:italic;">"{{ et.notes }}"</div>{% endif %}
+        </div>
+        <span class="tag {% if et.status == 'completed' %}tag-success{% elif et.status == 'waived' %}tag-neutral{% elif et.status == 'in_progress' %}tag-accent{% else %}tag-warning{% endif %}">
+          {{ et.get_status_display }}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Audit trail -->
+  {% if audit_trail %}
+  <div class="pane" style="margin-top:14px;">
+    <div class="pane-header">
+      <div class="pane-icon" style="font-size:8px;">⏱</div>
+      Activity Trail
+      <span style="margin-left:auto; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">Last 20 actions</span>
+    </div>
+    <div class="pane-body" style="padding:0 20px;">
+      {% for log in audit_trail %}
+      <div style="display:flex; gap:14px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--layer-stroke);">
+        <span class="tag {% if log.action == 'EXIT_INITIATED' %}tag-accent{% elif log.action == 'EXIT_STATUS_CHANGED' %}tag-warning{% elif log.action == 'TASK_UPDATED' %}tag-neutral{% elif log.action == 'INTERVIEW_SUBMITTED' %}tag-success{% else %}tag-neutral{% endif %}" style="font-size:10px; white-space:nowrap; flex-shrink:0; margin-top:2px;">
+          {{ log.get_action_display }}
+        </span>
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:12px;">{{ log.detail|default:"No detail" }}</div>
+          {% if log.old_value and log.new_value %}
+            <div style="font-size:11px; color:var(--text-tertiary); margin-top:2px;">
+              <span style="text-decoration:line-through;">{{ log.old_value }}</span> → <strong>{{ log.new_value }}</strong>
+            </div>
+          {% endif %}
+        </div>
+        <div style="flex-shrink:0; text-align:right;">
+          <div style="font-size:11px; color:var(--text-tertiary); white-space:nowrap;">{{ log.timestamp|date:"d M, H:i" }}</div>
+          <div style="font-size:11px; color:var(--text-tertiary);">{{ log.actor.get_full_name|default:log.actor.username|default:"System" }}</div>
         </div>
       </div>
+      {% endfor %}
     </div>
+  </div>
   {% endif %}
 
 </div>
