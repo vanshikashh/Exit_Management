@@ -44,9 +44,9 @@ def _annotate_processes(qs):
 
 def _assign_all_tasks(employee):
     """
-    On exit initiation, assign ALL tasks to the employee:
-      - All standard tasks (HR-managed, apply to everyone)
-      - All departmental tasks from ALL departments (each dept's HOD manages their own)
+    Assign ALL task templates to the employee if not already assigned.
+    Called at initiation AND on every HOD/employee page load to catch
+    any tasks added after initiation.
     """
     all_tasks = Task.objects.all()
     already   = set(EmployeeTask.objects
@@ -78,7 +78,6 @@ def login_view(request):
 
 
 def _role_redirect(user):
-    # Superusers and staff go straight to Django admin
     if user.is_superuser or user.is_staff:
         return redirect('/admin/')
     if user.is_hr:  return redirect('hr_dashboard')
@@ -98,7 +97,6 @@ def logout_view(request):
 @login_required(login_url='login')
 def employee_status(request):
     user = request.user
-    # Superusers/staff don't belong on the employee status page
     if user.is_superuser or user.is_staff:
         return redirect('/admin/')
     if user.is_hr:  return redirect('hr_dashboard')
@@ -107,16 +105,19 @@ def employee_status(request):
     process   = ExitProcess.objects.filter(employee=user).first()
     interview = ExitInterview.objects.filter(employee=user).first()
 
-    # Group tasks by department for department-wise clearance view
     dept_clearance = []
     all_tasks      = []
-    if process:
-        all_tasks = (EmployeeTask.objects
-                     .filter(employee=user)
-                     .select_related('task', 'task__department')
-                     .order_by('task__task_type', 'task__department__department_name', 'task__pk'))
 
-        # Standard tasks — shown as "HR / General" block
+    if process:
+        # Ensure all tasks are assigned — catches tasks added after initiation
+        _assign_all_tasks(user)
+
+        all_tasks = list(EmployeeTask.objects
+                         .filter(employee=user)
+                         .select_related('task', 'task__department')
+                         .order_by('task__task_type', 'task__department__department_name', 'task__pk'))
+
+        # Standard tasks — shown as General / HR block
         standard_tasks = [et for et in all_tasks if et.task.task_type == 'standard']
         if standard_tasks:
             done  = sum(1 for et in standard_tasks if et.status in ['completed', 'waived'])
@@ -151,8 +152,8 @@ def employee_status(request):
                     'pct':       round(done / total * 100) if total else 0,
                 })
 
-    total_tasks = len(all_tasks) if process else 0
-    completed   = sum(1 for et in all_tasks if et.status in ['completed', 'waived']) if process else 0
+    total_tasks = len(all_tasks)
+    completed   = sum(1 for et in all_tasks if et.status in ['completed', 'waived'])
 
     return render(request, 'tasks/employee_status.html', {
         'process':        process,
@@ -229,22 +230,16 @@ def form_success(request):
 @login_required(login_url='login')
 def hod_dashboard(request):
     """
-    HOD sees ALL exiting employees, but ONLY the tasks that belong
-    to their department. They are the ones who mark those tasks done.
-
-    A Finance HOD sees Alice (Engineering), Bob (Finance), Cara (Engineering)
-    — but only their Finance tasks for each person.
-
-    HOD can update status of their dept's tasks.
-    HOD cannot see or touch standard (HR) tasks or other depts' tasks.
+    HOD sees ALL exiting employees but ONLY tasks belonging to their department.
+    HOD can update those tasks. Tasks are auto-assigned on every page load
+    to catch any templates added after the exit was initiated.
     """
     denied = _require_hr_or_hod(request)
     if denied: return denied
 
     user = request.user
 
-    # All active exit processes
-    processes = (_annotate_processes(
+    processes = list(_annotate_processes(
         ExitProcess.objects
         .select_related('employee', 'employee__department')
         .order_by('-initiated_at')
@@ -253,16 +248,18 @@ def hod_dashboard(request):
     for p in processes:
         p.progress_pct = round(p.task_done / p.task_total * 100) if p.task_total else 0
 
-        # For each process, get only this HOD's department tasks
         if user.is_hod:
-            dept_tasks = (EmployeeTask.objects
-                          .filter(employee=p.employee,
-                                  task__task_type='departmental',
-                                  task__department=user.department)
-                          .select_related('task'))
-            p.my_tasks   = list(dept_tasks)
-            p.my_done    = sum(1 for et in p.my_tasks if et.status in ['completed', 'waived'])
-            p.my_total   = len(p.my_tasks)
+            # Ensure tasks are assigned — catches tasks added after exit initiation
+            _assign_all_tasks(p.employee)
+
+            dept_tasks = list(EmployeeTask.objects
+                              .filter(employee=p.employee,
+                                      task__task_type='departmental',
+                                      task__department=user.department)
+                              .select_related('task'))
+            p.my_tasks   = dept_tasks
+            p.my_done    = sum(1 for et in dept_tasks if et.status in ['completed', 'waived'])
+            p.my_total   = len(dept_tasks)
             p.my_pct     = round(p.my_done / p.my_total * 100) if p.my_total else 0
             p.my_cleared = p.my_done == p.my_total and p.my_total > 0
 
@@ -276,8 +273,8 @@ def hod_dashboard(request):
 @login_required(login_url='login')
 def hod_update_task(request, task_id):
     """
-    HOD updates a single task that belongs to their department.
-    Only departmental tasks for their own department — enforced at DB level.
+    HOD updates a single task belonging to their department.
+    Enforced at query level — wrong dept = 403.
     """
     denied = _require_hr_or_hod(request)
     if denied: return denied
@@ -288,7 +285,6 @@ def hod_update_task(request, task_id):
         task__task_type='departmental',
     )
 
-    # Enforce: HOD can only touch their own dept's tasks
     if request.user.is_hod and et.task.department != request.user.department:
         return HttpResponseForbidden("This task belongs to a different department.")
 
@@ -307,7 +303,6 @@ def hod_update_task(request, task_id):
                 et.completed_at = None
             et.save()
 
-            # Refresh the overall exit process status
             process = get_object_or_404(ExitProcess, employee=et.employee)
             old_p, new_p = process.refresh_status()
 
@@ -323,7 +318,7 @@ def hod_update_task(request, task_id):
                     actor=request.user, subject=et.employee,
                     action='EXIT_STATUS_CHANGED',
                     old_value=old_p, new_value=new_p,
-                    detail=f"Auto-progressed after task '{et.task.task_detail}' marked {new_status}",
+                    detail=f"Auto-progressed after '{et.task.task_detail}' marked {new_status}",
                 )
             messages.success(request, 'Task updated.')
 
@@ -433,13 +428,7 @@ def initiate_exit(request):
 def offboarding_checklist(request, user_id):
     """
     Full checklist for one employee — HR view.
-
-    Shows all tasks grouped by:
-      - Standard tasks (HR manages)
-      - Department tasks (grouped by owning dept, updated by that dept's HOD)
-
-    HR can update standard tasks here.
-    HR can see dept tasks but cannot update them (HOD's responsibility).
+    Standard tasks are HR-editable. Dept tasks are read-only for HR.
     """
     denied = _require_hr_or_hod(request)
     if denied: return denied
@@ -448,10 +437,9 @@ def offboarding_checklist(request, user_id):
     process  = get_object_or_404(ExitProcess, employee=employee)
     user     = request.user
 
-    # Ensure all tasks are assigned (catches new tasks added after initiation)
+    # Ensure all tasks assigned — catches new templates added after initiation
     _assign_all_tasks(employee)
 
-    # HR updating a standard task
     if request.method == 'POST' and user.is_hr:
         task_id    = request.POST.get('task_id')
         new_status = request.POST.get('status')
@@ -461,7 +449,7 @@ def offboarding_checklist(request, user_id):
         if task_id and new_status in valid:
             et = get_object_or_404(
                 EmployeeTask, pk=task_id, employee=employee,
-                task__task_type='standard',  # HR can ONLY update standard tasks here
+                task__task_type='standard',
             )
             old_status      = et.status
             et.status       = new_status
@@ -489,11 +477,10 @@ def offboarding_checklist(request, user_id):
             messages.success(request, 'Task updated.')
         return redirect('offboarding_checklist', user_id=user_id)
 
-    # Build task groups
-    all_et = (EmployeeTask.objects
-              .filter(employee=employee)
-              .select_related('task', 'task__department')
-              .order_by('task__task_type', 'task__department__department_name', 'task__pk'))
+    all_et = list(EmployeeTask.objects
+                  .filter(employee=employee)
+                  .select_related('task', 'task__department')
+                  .order_by('task__task_type', 'task__department__department_name', 'task__pk'))
 
     standard_tasks = [et for et in all_et if et.task.task_type == 'standard']
     dept_groups    = {}
@@ -505,7 +492,7 @@ def offboarding_checklist(request, user_id):
             dept_groups[d].append(et)
 
     completed   = sum(1 for et in all_et if et.status in ['completed', 'waived'])
-    total_tasks = len(list(all_et))
+    total_tasks = len(all_et)
     interview   = ExitInterview.objects.filter(employee=employee).first()
     audit_trail = (AuditLog.objects
                    .filter(subject=employee)
