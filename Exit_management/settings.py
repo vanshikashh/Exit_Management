@@ -1,6 +1,6 @@
 """
 Django settings for Exit_management project.
-Reads secrets and DB config from .env file via django-environ.
+Production-ready — reads all config from environment variables.
 """
 
 import environ
@@ -8,16 +8,17 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ─── Read .env ────────────────────────────────────────────────────────────────
 env = environ.Env(
     DEBUG=(bool, False),
 )
-environ.Env.read_env(BASE_DIR / '.env')
+
+# Read .env file if it exists (local dev only)
+environ.Env.read_env(BASE_DIR / '.env', overwrite=False)
 
 SECRET_KEY = env('SECRET_KEY')
 DEBUG       = env('DEBUG')
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -32,6 +33,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # serve static files in production
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -60,7 +62,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Exit_management.wsgi.application'
 
-# ─── Database — PostgreSQL via DATABASE_URL in .env ───────────────────────────
+# ─── Database ─────────────────────────────────────────────────────────────────
 DATABASES = {
     'default': env.db('DATABASE_URL')
 }
@@ -72,20 +74,30 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-AUTH_USER_MODEL      = 'tasks.CustomUser'
-LOGIN_URL            = 'login'
-LOGIN_REDIRECT_URL   = 'exit_interview_form'
-LOGOUT_REDIRECT_URL  = 'login'
+AUTH_USER_MODEL     = 'tasks.CustomUser'
+LOGIN_URL           = 'login'
+LOGIN_REDIRECT_URL  = 'exit_interview_form'
+LOGOUT_REDIRECT_URL = 'login'
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE     = 'Asia/Kolkata'
 USE_I18N      = True
 USE_TZ        = True
 
-STATIC_URL       = '/static/'
+# ─── Static files ─────────────────────────────────────────────────────────────
+STATIC_URL  = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# ─── Security (production) ────────────────────────────────────────────────────
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT      = True
+    SESSION_COOKIE_SECURE    = True
+    CSRF_COOKIE_SECURE       = True
 
 # ─── Jazzmin ──────────────────────────────────────────────────────────────────
 JAZZMIN_SETTINGS = {
