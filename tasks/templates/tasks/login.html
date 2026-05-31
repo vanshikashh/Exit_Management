@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In — Exit Management</title>
+  <title>Sign In — Clovia Exit Management</title>
   {% load static %}
   <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
@@ -15,39 +15,39 @@
     <div class="login-backdrop-grid"></div>
     <div class="login-backdrop-text">
 
-      <!-- Icon -->
-      <div style="margin-bottom:24px;">
-        <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <!-- Document body -->
+      <!-- Icon + Clovia -->
+      <div style="display:flex; align-items:center; gap:14px; margin-bottom:36px;">
+        <svg width="52" height="52" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
           <rect x="8" y="4" width="44" height="56" rx="3" stroke="white" stroke-width="3" fill="none"/>
-          <!-- Folded corner -->
           <path d="M40 4 L52 16 L40 16 Z" stroke="white" stroke-width="3" fill="none" stroke-linejoin="round"/>
-          <!-- Person head -->
           <circle cx="30" cy="18" r="5" stroke="white" stroke-width="2.5" fill="none"/>
-          <!-- Person shoulders -->
           <path d="M20 30 C20 24 40 24 40 30" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-          <!-- Lines of text -->
           <line x1="16" y1="37" x2="44" y2="37" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
           <line x1="16" y1="43" x2="44" y2="43" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
           <line x1="16" y1="49" x2="36" y2="49" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
-          <!-- Checkmark circle -->
           <circle cx="54" cy="54" r="14" fill="#22C55E" stroke="white" stroke-width="2.5"/>
           <path d="M47 54 L52 59 L61 49" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
+        <span style="font-size:26px; font-weight:800; color:#fff; letter-spacing:0.5px;">Clovia</span>
       </div>
 
-      <div class="product-name">Offboarding Platform</div>
-      <h2>Structured.<br>Tracked.<br>Cleared.</h2>
-      <p>Log in to access your exit tasks, interviews, and department clearances — all in one place.</p>
+      <!-- Tagline -->
+      <h2 style="font-size:42px; font-weight:800; line-height:1.1; margin-bottom:20px; color:#fff;">
+        Offboarding<br>Platform
+      </h2>
+      <p style="font-size:15px; opacity:0.78; line-height:1.7; max-width:360px; color:#fff;">
+        Log in to access your exit tasks, interviews, and department clearances.
+        We ensure a smooth exit from the organization.
+      </p>
+
     </div>
   </div>
 
   <!-- Right: login panel -->
   <div class="login-panel">
 
-    <!-- Small icon + name on login panel -->
     <div style="display:flex; align-items:center; gap:10px; margin-bottom:32px;">
-      <svg width="32" height="32" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <svg width="28" height="28" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="8" y="4" width="44" height="56" rx="3" stroke="#0078D4" stroke-width="3" fill="none"/>
         <path d="M40 4 L52 16 L40 16 Z" stroke="#0078D4" stroke-width="3" fill="none" stroke-linejoin="round"/>
         <circle cx="30" cy="18" r="5" stroke="#0078D4" stroke-width="2.5" fill="none"/>
@@ -58,7 +58,7 @@
         <circle cx="54" cy="54" r="14" fill="#22C55E" stroke="white" stroke-width="2.5"/>
         <path d="M47 54 L52 59 L61 49" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
-      <span style="font-size:15px; font-weight:800; color:#1a1a2e; letter-spacing:0.3px;">Exit Management</span>
+      <span style="font-size:14px; font-weight:700; color:#1a1a2e; letter-spacing:0.3px;">Clovia · Exit Management</span>
     </div>
 
     <h1>Sign in</h1>
