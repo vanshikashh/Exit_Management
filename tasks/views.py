@@ -540,3 +540,116 @@ def audit_log_view(request):
         'employee_filter': employee_filter,
         'total_logs':      AuditLog.objects.count(),
     })
+
+
+# ─── HOD employee task detail ─────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def hod_employee_tasks(request, user_id):
+    """
+    HOD clicks on an employee from their dashboard — sees only
+    their department's tasks for that employee. Can update them.
+    """
+    denied = _require_hr_or_hod(request)
+    if denied: return denied
+
+    employee = get_object_or_404(CustomUser, pk=user_id)
+    process  = get_object_or_404(ExitProcess, employee=employee)
+    user     = request.user
+
+    # Ensure tasks assigned
+    _assign_all_tasks(employee)
+
+    # Get only this HOD's dept tasks
+    tasks = list(EmployeeTask.objects
+                 .filter(employee=employee,
+                         task__task_type='departmental',
+                         task__department=user.department)
+                 .select_related('task'))
+
+    done = sum(1 for et in tasks if et.status in ['completed', 'waived'])
+    total = len(tasks)
+    pct   = round(done / total * 100) if total else 0
+
+    return render(request, 'tasks/hod_employee_tasks.html', {
+        'employee':    employee,
+        'process':     process,
+        'tasks':       tasks,
+        'done':        done,
+        'total':       total,
+        'pct':         pct,
+        'all_cleared': done == total and total > 0,
+        'department':  user.department,
+    })
+
+
+# ─── Employee tasks page ──────────────────────────────────────────────────────
+
+@login_required(login_url='login')
+def employee_tasks(request):
+    """
+    Employee clicks 'View tasks' from status page — sees all
+    departments as collapsible sections, read-only.
+    """
+    user = request.user
+    if user.is_superuser or user.is_staff:
+        return redirect('/admin/')
+    if user.is_hr:  return redirect('hr_dashboard')
+    if user.is_hod: return redirect('hod_dashboard')
+
+    process = ExitProcess.objects.filter(employee=user).first()
+    if not process:
+        return redirect('employee_status')
+
+    _assign_all_tasks(user)
+
+    all_tasks = list(EmployeeTask.objects
+                     .filter(employee=user)
+                     .select_related('task', 'task__department')
+                     .order_by('task__task_type', 'task__department__department_name', 'task__pk'))
+
+    dept_clearance = []
+
+    standard_tasks = [et for et in all_tasks if et.task.task_type == 'standard']
+    if standard_tasks:
+        done  = sum(1 for et in standard_tasks if et.status in ['completed', 'waived'])
+        total = len(standard_tasks)
+        dept_clearance.append({
+            'dept_name': 'General / HR',
+            'tasks':     standard_tasks,
+            'done':      done,
+            'total':     total,
+            'cleared':   done == total,
+            'pct':       round(done / total * 100) if total else 0,
+        })
+
+    dept_ids = (Task.objects
+                .filter(task_type='departmental')
+                .values_list('department_id', flat=True)
+                .distinct())
+    for dept in Department.objects.filter(pk__in=dept_ids).order_by('department_name'):
+        dept_tasks = [et for et in all_tasks
+                      if et.task.task_type == 'departmental'
+                      and et.task.department_id == dept.pk]
+        if dept_tasks:
+            done  = sum(1 for et in dept_tasks if et.status in ['completed', 'waived'])
+            total = len(dept_tasks)
+            dept_clearance.append({
+                'dept_name': dept.department_name,
+                'tasks':     dept_tasks,
+                'done':      done,
+                'total':     total,
+                'cleared':   done == total,
+                'pct':       round(done / total * 100) if total else 0,
+            })
+
+    total_tasks = len(all_tasks)
+    completed   = sum(1 for et in all_tasks if et.status in ['completed', 'waived'])
+
+    return render(request, 'tasks/employee_tasks.html', {
+        'process':        process,
+        'dept_clearance': dept_clearance,
+        'completed':      completed,
+        'total':          total_tasks,
+        'progress_pct':   round(completed / total_tasks * 100) if total_tasks else 0,
+    })

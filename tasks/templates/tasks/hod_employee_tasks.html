@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ employee.get_full_name }} — {{ department }} Tasks</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+</head>
+<body>
+
+<nav class="titlebar">
+  <div class="titlebar-app">
+    <svg width="20" height="20" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="8" y="4" width="44" height="56" rx="3" stroke="white" stroke-width="3" fill="none"/>
+      <path d="M40 4 L52 16 L40 16 Z" stroke="white" stroke-width="3" fill="none" stroke-linejoin="round"/>
+      <circle cx="30" cy="18" r="5" stroke="white" stroke-width="2.5" fill="none"/>
+      <path d="M20 30 C20 24 40 24 40 30" stroke="white" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+      <line x1="16" y1="37" x2="44" y2="37" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      <line x1="16" y1="43" x2="44" y2="43" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      <line x1="16" y1="49" x2="36" y2="49" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.7"/>
+      <circle cx="54" cy="54" r="14" fill="#22C55E" stroke="white" stroke-width="2.5"/>
+      <path d="M47 54 L52 59 L61 49" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="titlebar-app-name">Exit Management</span>
+  </div>
+  <div class="titlebar-nav">
+    <a href="{% url 'hod_dashboard' %}" class="titlebar-nav-item">Dashboard</a>
+    <span style="color:var(--text-tertiary); font-size:11px; padding:0 4px;">/</span>
+    <span class="titlebar-nav-item active">{{ employee.first_name }}'s Tasks</span>
+  </div>
+  <div class="titlebar-right">
+    <div class="user-badge">
+      <div class="user-avatar">{{ request.user.first_name|first|upper|default:request.user.username|first|upper }}</div>
+      <span>{{ request.user.get_full_name|default:request.user.username }}</span>
+      <span class="tag tag-accent" style="font-size:10px; padding:1px 6px;">HOD · {{ department }}</span>
+    </div>
+    <form method="post" action="{% url 'logout' %}" style="margin:0;">
+      {% csrf_token %}
+      <button type="submit" class="cmd-btn cmd-btn-secondary">Sign out</button>
+    </form>
+  </div>
+</nav>
+
+<div class="page-canvas">
+
+  <div style="margin-bottom:12px;">
+    <a href="{% url 'hod_dashboard' %}" class="cmd-btn cmd-btn-secondary">← Back to Dashboard</a>
+  </div>
+
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>{{ employee.get_full_name|default:employee.username }}</h1>
+      <p>{{ employee.department|default:"No department" }} &nbsp;·&nbsp; {{ department }} clearance tasks</p>
+    </div>
+    {% if all_cleared %}
+      <span class="tag tag-success" style="font-size:12px; padding:5px 14px;">✓ {{ department }} Cleared</span>
+    {% else %}
+      <span class="tag tag-warning" style="font-size:12px; padding:5px 14px;">{{ done }}/{{ total }} tasks done</span>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Progress -->
+  <div class="pane" style="margin-bottom:14px;">
+    <div class="pane-body" style="padding:14px 20px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+        <span style="font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px;">{{ department }} Progress</span>
+        <span style="font-size:22px; font-weight:800; color:{% if all_cleared %}var(--success){% else %}var(--accent){% endif %};">{{ pct }}%</span>
+      </div>
+      <div class="progress-bar" style="height:6px;">
+        <div class="progress-fill" style="width:{{ pct }}%; {% if all_cleared %}background:var(--success);{% endif %}"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tasks -->
+  <div class="pane">
+    <div class="pane-header">
+      <div class="pane-icon">✓</div>
+      {{ department }} Tasks
+      <span style="margin-left:auto; font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--text-tertiary);">
+        You can update these — other dept tasks are managed by their respective HODs
+      </span>
+    </div>
+    <div class="pane-body" style="padding:0 20px;">
+      {% for et in tasks %}
+      <form method="post" action="{% url 'hod_update_task' et.pk %}" style="margin:0;">
+        {% csrf_token %}
+        <div class="task-row">
+          <div class="task-body">
+            <div class="task-name">{{ et.task.task_detail }}</div>
+            {% if et.completed_at %}
+              <div class="task-sub">Completed {{ et.completed_at|date:"d M Y, H:i" }}</div>
+            {% elif et.status == 'in_progress' %}
+              <div class="task-sub" style="color:var(--accent);">In progress</div>
+            {% endif %}
+            <input type="text" name="notes" class="task-note-input"
+                   placeholder="Add a note…" value="{{ et.notes|default:'' }}">
+          </div>
+          <div class="task-controls">
+            <select name="status" class="win-select">
+              <option value="pending"     {% if et.status == 'pending'     %}selected{% endif %}>Pending</option>
+              <option value="in_progress" {% if et.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+              <option value="completed"   {% if et.status == 'completed'   %}selected{% endif %}>Completed</option>
+              <option value="waived"      {% if et.status == 'waived'      %}selected{% endif %}>Waived</option>
+            </select>
+            <button type="submit" class="cmd-btn cmd-btn-primary">Save</button>
+          </div>
+        </div>
+      </form>
+      {% empty %}
+      <div style="padding:24px 0; text-align:center; color:var(--text-tertiary); font-size:13px;">
+        No {{ department }} tasks assigned. Add task templates via Admin → Tasks.
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
